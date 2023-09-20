@@ -1,50 +1,42 @@
 import PropTypes from 'prop-types';
-import { Component } from 'react';
+import { useState } from 'react';
 
 import { Form, Header, Icon } from './SearchBar.styled';
 
-export class SearchBar extends Component {
-  static propTypes = {
-    onSubmit: PropTypes.func.isRequired,
+export const SearchBar = ({ onSubmit }) => {
+  const [query, setQuery] = useState('');
+
+  const onFormChange = evt => {
+    setQuery(evt.currentTarget.value);
   };
 
-  state = {
-    query: '',
-  };
-
-  onChange = evt => {
-    this.setState({
-      query: evt.currentTarget.value,
-    });
-  };
-
-  onSubmit = evt => {
+  const onFormSubmit = evt => {
     evt.preventDefault();
-    this.props.onSubmit(evt.currentTarget.query.value);
-    this.setState({
-      query: '',
-    });
+    onSubmit(evt.currentTarget.query.value);
+    setQuery('');
   };
 
-  render() {
-    return (
-      <Header>
-        <Form onSubmit={this.onSubmit}>
-          <input
-            type="text"
-            autoComplete="off"
-            autoFocus
-            placeholder="Search images and photos..."
-            name="query"
-            onChange={this.onChange}
-            value={this.state.query}
-            required
-          />
-          <button type="submit">
-            <Icon />
-          </button>
-        </Form>
-      </Header>
-    );
-  }
-}
+  return (
+    <Header>
+      <Form onSubmit={onFormSubmit}>
+        <input
+          type="text"
+          autoComplete="off"
+          autoFocus
+          placeholder="Search images and photos..."
+          name="query"
+          onChange={onFormChange}
+          value={query}
+          required
+        />
+        <button type="submit">
+          <Icon />
+        </button>
+      </Form>
+    </Header>
+  );
+};
+
+SearchBar.propTypes = {
+  onSubmit: PropTypes.func.isRequired,
+};

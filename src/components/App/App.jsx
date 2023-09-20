@@ -1,79 +1,58 @@
 import { Toaster } from 'react-hot-toast';
-import { Component } from 'react';
+import { Component, useEffect, useState } from 'react';
 import { SearchBar } from '../SearchBar/SearchBar';
 import { ImageGallery } from '../ImageGallery/ImageGallery';
 import { Button } from '../Button/Button';
-import { getGalleryItems } from 'galleryApi';
+import { getGalleryItems } from 'services/galleryApi';
 import { Loader } from 'components/Loader/Loader';
-import * as notificationAPI from 'galleryNotificationApi';
+import * as notificationAPI from 'services/galleryNotificationApi';
 
-export class App extends Component {
-  state = {
-    query: '',
-    items: [],
-    page: 1,
-    isLoading: false,
-    showLoadMore: false,
-  };
+export const App = () => {
+  const [query, setQuery] = useState('');
+  const [items, setItems] = useState([]);
+  const [page, setPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showLoadMore, setShowLoadMore] = useState(false);
 
-  componentDidUpdate = async (_, prevState) => {
-    if (
-      this.state.query !== prevState.query ||
-      this.state.page !== prevState.page
-    ) {
-      const { query, page } = this.state;
+  useEffect(() => {
+    if (query === '') {
+      return;
+    }
 
+    setIsLoading(true);
+
+    (async () => {
       try {
-        this.setState({
-          isLoading: true,
-        });
-
         const { hits, totalHits } = await getGalleryItems(query, page);
 
-        this.setState(state => ({
-          items: [...state.items, ...hits],
-          showLoadMore: this.state.page < Math.ceil(totalHits / 12),
-        }));
+        setItems(items => [...items, ...hits]);
+        setShowLoadMore(page < Math.ceil(totalHits / 12));
 
         notificationAPI.success(totalHits, page);
         notificationAPI.info(totalHits, page);
       } catch (error) {
-        notificationAPI.error();
+        notificationAPI(error);
       } finally {
-        this.setState({
-          isLoading: false,
-        });
+        setIsLoading(false);
       }
-    }
+    })();
+  }, [query, page]);
+
+  const onSearchSubmit = value => {
+    setQuery(`${Date.now()}/${value}`);
+    setItems([]);
+    setPage(1);
   };
 
-  onSearchSubmit = value => {
-    this.setState({
-      query: `${Date.now()}/${value}`,
-      items: [],
-      page: 1,
-    });
-  };
-
-  onLoadMoreClick = () => {
-    this.setState(state => ({
-      page: state.page + 1,
-    }));
-  };
-
-  render() {
-    const { items, isLoading, showLoadMore } = this.state;
-
-    return (
-      <>
-        <Toaster position="top-right" reverseOrder={false} />
-        <SearchBar onSubmit={this.onSearchSubmit} />
-        {isLoading && <Loader />}
-        {items.length > 0 && <ImageGallery items={items} />}
-        {showLoadMore && (
-          <Button onClick={this.onLoadMoreClick} loading={isLoading} />
-        )}
-      </>
-    );
-  }
-}
+  return (
+    <>
+      <Toaster position="top-right" reverseOrder={false} />
+      <SearchBar onSubmit={onSearchSubmit} />
+      {isLoading && <Loader />}
+      {items.length > 0 && <ImageGallery items={items} />}
+      {showLoadMore && (
+        <Button onClick={() => setPage(page => page + 1)} loading={isLoading} />
+      )}
+    </>
+  );
+};
